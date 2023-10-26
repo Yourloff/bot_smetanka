@@ -6,9 +6,10 @@ import random
 class Bot:
     COMMANDS = ['start', 'ДА', 'НЕТ']
 
-    def __init__(self, user_id, vk_api):
+    def __init__(self, user_id, vk_api, vk_upload):
         self.user_id = user_id
         self.vk_api = vk_api
+        self.upload = vk_upload
         self.PATH = os.path.join('user_responses', str(self.user_id) + '.json')
         self.DATASET = 'dataset.json'
 
@@ -22,7 +23,24 @@ class Bot:
                                       message=message,
                                       random_id=random_id)
 
-    def ask(self):
+    def send_keyboard(self, keyboard):
+        random_id = random.getrandbits(31)
+        self.vk_api.messages.send(peer_id=self.user_id, message="Нажмите 'Начать', для проведения краткого анкетирования", keyboard=keyboard.get_keyboard(),
+                                  random_id=random_id)
+
+    def send_photo(self):
+        random_id = random.getrandbits(31)
+        file_path = os.path.join('img', 'hairstyle.jpg')
+        photo = self.upload.photo_messages(file_path)
+        owner_id = photo[0]['owner_id']
+        photo_id = photo[0]['id']
+        access_key = photo[0]['access_key']
+        attachment = f'photo{owner_id}_{photo_id}_{access_key}'
+        self.vk_api.messages.send(peer_id=self.user_id,
+                                  attachment=attachment,
+                                  random_id=random_id)
+
+    def say(self):
         user_res = self.read_json(self.PATH)
         list_user_res = list(user_res.keys())
         dataset = self.read_json(self.DATASET)
@@ -31,11 +49,25 @@ class Bot:
         for dataset_key in list_data:
             if dataset_key in list_user_res:
                 continue
+            elif type(dataset['questions'][dataset_key]) == list:
+                for item in dataset['questions'][dataset_key]:
+                    for key, value in item.items():
+                        if key == 'attachment':
+                            self.send_photo()
+                        else:
+                            self.send_msg(value)
+                user_res[dataset_key] = "Фото отправлено"
+                self.append_user_file(user_res)
             else:
                 user_res[dataset_key] = ""
                 self.append_user_file(user_res)
                 self.send_msg(dataset['questions'][dataset_key].replace('username', self.get_user_name()))
                 break
+
+    def create_user(self):
+        self.create_file_answers()
+        text = self.read_dataset('start')
+        self.send_msg(text.replace('username', self.get_user_name()))
 
     def answer(self, message):
         user_res = self.read_json(self.PATH)
@@ -46,14 +78,7 @@ class Bot:
                 self.append_user_file(user_res)
 
     def request(self, message):
-        res = self.read_dataset(message)
-
-        if not self.user_exist():
-            self.create_file_answers()
-            text = self.read_dataset('start')
-            self.send_msg(text.replace('username', self.get_user_name()))
-            self.ask()
-        elif message.upper() == self.COMMANDS[0]:
+        if message.upper() == self.COMMANDS[0]:
             pass
         elif message.upper() == self.COMMANDS[1]:
             pass
@@ -61,7 +86,6 @@ class Bot:
             pass
         else:
             self.answer(message)
-            self.ask()
 
     def user_exist(self):
         return os.path.isfile(self.PATH)
@@ -87,7 +111,7 @@ class Bot:
 
     def append_user_file(self, data):
         with open(self.PATH, mode='w', encoding='utf-8') as file:
-            json.dump(data, file, indent=2)
+            json.dump(data, file, indent=2, ensure_ascii=False)
             file.close()
 
     def create_file_answers(self):
@@ -95,24 +119,7 @@ class Bot:
             data = {
                 'link': 'https://vk.com/id' + str(self.user_id)
             }
-            json_string = json.dumps(data)
+            json_string = json.dumps(data, ensure_ascii=False)
             f.write(json_string)
             f.close()
         print('Файл для ' + self.get_user_name() + ' (' + str(self.user_id) + ') создан!')
-
-
-
-# user_res = self.read_json(self.PATH)
-#         list_user_res = list(user_res.keys())
-#         dataset = self.read_json(self.DATASET)
-#         list_data = list(dataset['questions'])
-#
-#         for dataset_key in list_data:
-#             if dataset_key in list_user_res:
-#                 if user_res[dataset_key] == "":
-#                     user_res[dataset_key] = message
-#                     self.append_user_file(user_res)
-#             else:
-#                 user_res[dataset_key] = ""
-#                 self.append_user_file(user_res)
-#                 return dataset['questions'][dataset_key].replace('username', self.get_user_name())
