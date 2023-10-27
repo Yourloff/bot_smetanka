@@ -7,6 +7,7 @@ from bot import Bot
 
 class Server:
     API_VERSION = '5.154'
+    START = 'Записаться'
 
     def __init__(self, api_token, server_name: str = "Empty"):
         self.server_name = server_name
@@ -24,7 +25,7 @@ class Server:
             if event.type == VkEventType.MESSAGE_NEW and event.to_me:
                 bot = Bot(user_id=event.user_id, vk_api=self.vk_api, vk_upload=self.vk_upload)
 
-                if event.message == 'Начать':
+                if event.message == self.START:
                     bot.create_user()
 
                 if bot.user_exist():
@@ -37,5 +38,6 @@ class Server:
                     bot.request(message)
                 else:
                     keyboard = VkKeyboard(one_time=True)
-                    keyboard.add_button("Начать", color=VkKeyboardColor.PRIMARY)
-                    bot.send_keyboard(keyboard)
+                    keyboard.add_button(self.START, color=VkKeyboardColor.PRIMARY)
+                    bot.send_keyboard(keyboard, message=f"Нажмите '{self.START}', для проведения краткого "
+                                                        "анкетирования")

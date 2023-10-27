@@ -23,9 +23,9 @@ class Bot:
                                       message=message,
                                       random_id=random_id)
 
-    def send_keyboard(self, keyboard):
+    def send_keyboard(self, keyboard, message):
         random_id = random.getrandbits(31)
-        self.vk_api.messages.send(peer_id=self.user_id, message="Нажмите 'Начать', для проведения краткого анкетирования", keyboard=keyboard.get_keyboard(),
+        self.vk_api.messages.send(peer_id=self.user_id, message=message, keyboard=keyboard.get_keyboard(),
                                   random_id=random_id)
 
     def send_photo(self):
