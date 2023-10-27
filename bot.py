@@ -4,13 +4,13 @@ import random
 
 
 class Bot:
-    COMMANDS = ['start', 'ДА', 'НЕТ']
+    DIRECTORY = 'user_responses'
 
     def __init__(self, user_id, vk_api, vk_upload):
         self.user_id = user_id
         self.vk_api = vk_api
         self.upload = vk_upload
-        self.PATH = os.path.join('user_responses', str(self.user_id) + '.json')
+        self.PATH = os.path.join(self.DIRECTORY, str(self.user_id) + '.json')
         self.DATASET = 'dataset.json'
 
     def get_user_name(self):
@@ -78,14 +78,7 @@ class Bot:
                 self.append_user_file(user_res)
 
     def request(self, message):
-        if message.upper() == self.COMMANDS[0]:
-            pass
-        elif message.upper() == self.COMMANDS[1]:
-            pass
-        elif message.upper() == self.COMMANDS[2]:
-            pass
-        else:
-            self.answer(message)
+        self.answer(message)
 
     def user_exist(self):
         return os.path.isfile(self.PATH)
@@ -115,10 +108,14 @@ class Bot:
             file.close()
 
     def create_file_answers(self):
+        if not os.path.exists(self.DIRECTORY):
+            os.mkdir(self.DIRECTORY)
+
         with open(self.PATH, 'w', encoding='utf-8') as f:
             data = {
                 'link': 'https://vk.com/id' + str(self.user_id)
             }
+
             json_string = json.dumps(data, ensure_ascii=False)
             f.write(json_string)
             f.close()
